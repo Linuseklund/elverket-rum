@@ -282,16 +282,24 @@ async function show(env) {
 }
 function syncVideos(master) {
   clearInterval(syncVideos.t);
+  // Ljudet är huvudklocka när det spelar: det hoppar aldrig, bilden följer ljudet (annars hackar ljudet).
   syncVideos.t = setInterval(() => {
-    for (const v of videos) if (v !== master && Math.abs(v.currentTime - master.currentTime) > .12) v.currentTime = master.currentTime;
-    if (audio && !audio.paused && Math.abs(audio.currentTime - master.currentTime) > .2) audio.currentTime = master.currentTime;
+    const useAudio = audio && !audio.paused && !audio.seeking;
+    const t = useAudio ? audio.currentTime : master.currentTime;
+    for (const v of videos) {
+      if (!useAudio && v === master) continue;
+      const d = v.duration || 0, want = d ? t % d : t;
+      let diff = Math.abs(v.currentTime - want); if (d) diff = Math.min(diff, d - diff);
+      if (diff > .25) v.currentTime = want;
+      if (useAudio && v.paused) v.play().catch(() => {});
+    }
   }, 1000);
 }
 let audio = null;
 $('#sndBtn').addEventListener('click', () => {
   if (!audio) return;
   if (audio.paused) {
-    if (videos[0]) { videos.forEach(v => v.currentTime = 0); audio.currentTime = 0; }
+    if (videos[0]) audio.currentTime = videos[0].currentTime % (audio.duration || 1e9);
     audio.play().then(() => $('#sndBtn').textContent = '♪ Stäng av ljud').catch(() => {});
   } else { audio.pause(); $('#sndBtn').textContent = '♪ Slå på ljud'; }
 });
