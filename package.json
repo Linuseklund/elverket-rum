@@ -1,0 +1,10 @@
+{
+  "name": "elverket-rum",
+  "private": true,
+  "type": "module",
+  "engines": { "node": "22.x" },
+  "dependencies": {
+    "@vercel/blob": "2.9.0",
+    "@vercel/functions": "3.11.3"
+  }
+}

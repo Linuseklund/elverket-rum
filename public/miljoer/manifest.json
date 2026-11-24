@@ -1,0 +1,80 @@
+[
+ {
+  "id": "gata3d-byggrasa-v02",
+  "name": "Gata 3D – uppbyggnad & kollaps v02",
+  "surfaces": {
+   "LongWallA": {
+    "src": "miljoer/gata3d-byggrasa-v02/LongWallA.jpg",
+    "type": "image"
+   },
+   "ShortWallD": {
+    "src": "miljoer/gata3d-byggrasa-v02/ShortWallD.jpg",
+    "type": "image"
+   },
+   "LongWallB": {
+    "src": "miljoer/gata3d-byggrasa-v02/LongWallB.jpg",
+    "type": "image"
+   },
+   "ShortWallC": {
+    "src": "miljoer/gata3d-byggrasa-v02/ShortWallC.jpg",
+    "type": "image"
+   },
+   "Floor": {
+    "src": "miljoer/gata3d-byggrasa-v02/Floor.jpg",
+    "type": "image"
+   }
+  }
+ },
+ {
+  "id": "gata3d-byggrasa-v01",
+  "name": "Gata 3D – uppbyggnad & kollaps v01",
+  "surfaces": {
+   "LongWallA": {
+    "src": "miljoer/gata3d-byggrasa-v01/LongWallA.jpg",
+    "type": "image"
+   },
+   "ShortWallD": {
+    "src": "miljoer/gata3d-byggrasa-v01/ShortWallD.jpg",
+    "type": "image"
+   },
+   "LongWallB": {
+    "src": "miljoer/gata3d-byggrasa-v01/LongWallB.jpg",
+    "type": "image"
+   },
+   "ShortWallC": {
+    "src": "miljoer/gata3d-byggrasa-v01/ShortWallC.jpg",
+    "type": "image"
+   },
+   "Floor": {
+    "src": "miljoer/gata3d-byggrasa-v01/Floor.jpg",
+    "type": "image"
+   }
+  }
+ },
+ {
+  "id": "gata-fotoreal-v02",
+  "name": "Gata fotoreal v02 (stillbilder)",
+  "surfaces": {
+   "LongWallA": {
+    "src": "miljoer/gata-fotoreal-v02/LongWallA.jpg",
+    "type": "image"
+   },
+   "ShortWallD": {
+    "src": "miljoer/gata-fotoreal-v02/ShortWallD.jpg",
+    "type": "image"
+   },
+   "LongWallB": {
+    "src": "miljoer/gata-fotoreal-v02/LongWallB.jpg",
+    "type": "image"
+   },
+   "ShortWallC": {
+    "src": "miljoer/gata-fotoreal-v02/ShortWallC.jpg",
+    "type": "image"
+   },
+   "Floor": {
+    "src": "miljoer/gata-fotoreal-v02/Floor.jpg",
+    "type": "image"
+   }
+  }
+ }
+]
