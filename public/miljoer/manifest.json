@@ -83,7 +83,8 @@
     "src": "filmer/skanegatan-loop-v01/Floor.mp4",
     "type": "video"
    }
-  }
+  },
+  "floorFlip": true
  },
  {
   "id": "skanegatan-still-v01",
@@ -147,7 +148,6 @@
   "group": "ELIS",
   "kind": "film",
   "note": "3 min med ljud · låg upplösning (förhandsvisning)",
-  "floorFlip": true,
   "audio": "filmer/elis-at-les-v01/ljud.m4a",
   "surfaces": {
    "LongWallA": {
@@ -178,7 +178,6 @@
   "group": "ELIS",
   "kind": "film",
   "note": "3 min med ljud · låg upplösning (förhandsvisning)",
-  "floorFlip": true,
   "audio": "filmer/elis-h-studio-v01/ljud.m4a",
   "surfaces": {
    "LongWallA": {
@@ -209,7 +208,6 @@
   "group": "ELIS",
   "kind": "film",
   "note": "3 min med ljud · låg upplösning (förhandsvisning)",
-  "floorFlip": true,
   "audio": "filmer/elis-junior-b-v01/ljud.m4a",
   "surfaces": {
    "LongWallA": {
@@ -261,7 +259,8 @@
     "src": "filmer/sunsettest-v02/Floor.mp4",
     "type": "video"
    }
-  }
+  },
+  "floorFlip": true
  },
  {
   "id": "blobtest-v01",
@@ -291,6 +290,7 @@
     "src": "filmer/blobtest-v01/Floor.mp4",
     "type": "video"
    }
-  }
+  },
+  "floorFlip": true
  }
 ]
