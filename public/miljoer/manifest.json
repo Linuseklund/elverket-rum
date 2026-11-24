@@ -2,6 +2,8 @@
  {
   "id": "gata3d-byggrasa-v02",
   "name": "Gata 3D – uppbyggnad & kollaps v02",
+  "group": "Gata 3D",
+  "note": "Stillbild, full upplösning",
   "surfaces": {
    "LongWallA": {
     "src": "miljoer/gata3d-byggrasa-v02/LongWallA.jpg",
@@ -28,6 +30,8 @@
  {
   "id": "gata3d-byggrasa-v01",
   "name": "Gata 3D – uppbyggnad & kollaps v01",
+  "group": "Gata 3D",
+  "note": "Stillbild, full upplösning",
   "surfaces": {
    "LongWallA": {
     "src": "miljoer/gata3d-byggrasa-v01/LongWallA.jpg",
@@ -52,8 +56,69 @@
   }
  },
  {
+  "id": "skanegatan-loop-v01",
+  "name": "Skånegatan – loop v01",
+  "group": "Skånegatan",
+  "kind": "film",
+  "note": "20 s sömlös loop med ljud",
+  "floorFlip": true,
+  "audio": "filmer/skanegatan-loop-v01/ljud.m4a",
+  "surfaces": {
+   "LongWallA": {
+    "src": "filmer/skanegatan-loop-v01/LongWallA.mp4",
+    "type": "video"
+   },
+   "ShortWallD": {
+    "src": "filmer/skanegatan-loop-v01/ShortWallD.mp4",
+    "type": "video"
+   },
+   "LongWallB": {
+    "src": "filmer/skanegatan-loop-v01/LongWallB.mp4",
+    "type": "video"
+   },
+   "ShortWallC": {
+    "src": "filmer/skanegatan-loop-v01/ShortWallC.mp4",
+    "type": "video"
+   },
+   "Floor": {
+    "src": "filmer/skanegatan-loop-v01/Floor.mp4",
+    "type": "video"
+   }
+  }
+ },
+ {
+  "id": "skanegatan-still-v01",
+  "name": "Skånegatan – stillbild v01",
+  "group": "Skånegatan",
+  "note": "Stillbild ur loopen",
+  "surfaces": {
+   "LongWallA": {
+    "src": "miljoer/skanegatan-still-v01/LongWallA.jpg",
+    "type": "image"
+   },
+   "ShortWallD": {
+    "src": "miljoer/skanegatan-still-v01/ShortWallD.jpg",
+    "type": "image"
+   },
+   "LongWallB": {
+    "src": "miljoer/skanegatan-still-v01/LongWallB.jpg",
+    "type": "image"
+   },
+   "ShortWallC": {
+    "src": "miljoer/skanegatan-still-v01/ShortWallC.jpg",
+    "type": "image"
+   },
+   "Floor": {
+    "src": "miljoer/skanegatan-still-v01/Floor.jpg",
+    "type": "image"
+   }
+  }
+ },
+ {
   "id": "gata-fotoreal-v02",
-  "name": "Gata fotoreal v02 (stillbilder)",
+  "name": "Gata fotoreal v02",
+  "group": "Gata fotoreal",
+  "note": "Stillbilder",
   "surfaces": {
    "LongWallA": {
     "src": "miljoer/gata-fotoreal-v02/LongWallA.jpg",
@@ -74,6 +139,160 @@
    "Floor": {
     "src": "miljoer/gata-fotoreal-v02/Floor.jpg",
     "type": "image"
+   }
+  }
+ },
+ {
+  "id": "elis-at-les-v01",
+  "name": "ELIS – At Les v01",
+  "group": "ELIS",
+  "kind": "film",
+  "note": "3 min med ljud · låg upplösning (förhandsvisning)",
+  "floorFlip": true,
+  "audio": "filmer/elis-at-les-v01/ljud.m4a",
+  "surfaces": {
+   "LongWallA": {
+    "src": "filmer/elis-at-les-v01/LongWallA.mp4",
+    "type": "video"
+   },
+   "ShortWallD": {
+    "src": "filmer/elis-at-les-v01/ShortWallD.mp4",
+    "type": "video"
+   },
+   "LongWallB": {
+    "src": "filmer/elis-at-les-v01/LongWallB.mp4",
+    "type": "video"
+   },
+   "ShortWallC": {
+    "src": "filmer/elis-at-les-v01/ShortWallC.mp4",
+    "type": "video"
+   },
+   "Floor": {
+    "src": "filmer/elis-at-les-v01/Floor.mp4",
+    "type": "video"
+   }
+  }
+ },
+ {
+  "id": "elis-h-studio-v01",
+  "name": "ELIS – H Studio v01",
+  "group": "ELIS",
+  "kind": "film",
+  "note": "3 min med ljud · låg upplösning (förhandsvisning)",
+  "floorFlip": true,
+  "audio": "filmer/elis-h-studio-v01/ljud.m4a",
+  "surfaces": {
+   "LongWallA": {
+    "src": "filmer/elis-h-studio-v01/LongWallA.mp4",
+    "type": "video"
+   },
+   "ShortWallD": {
+    "src": "filmer/elis-h-studio-v01/ShortWallD.mp4",
+    "type": "video"
+   },
+   "LongWallB": {
+    "src": "filmer/elis-h-studio-v01/LongWallB.mp4",
+    "type": "video"
+   },
+   "ShortWallC": {
+    "src": "filmer/elis-h-studio-v01/ShortWallC.mp4",
+    "type": "video"
+   },
+   "Floor": {
+    "src": "filmer/elis-h-studio-v01/Floor.mp4",
+    "type": "video"
+   }
+  }
+ },
+ {
+  "id": "elis-junior-b-v01",
+  "name": "ELIS – Junior B v01",
+  "group": "ELIS",
+  "kind": "film",
+  "note": "3 min med ljud · låg upplösning (förhandsvisning)",
+  "floorFlip": true,
+  "audio": "filmer/elis-junior-b-v01/ljud.m4a",
+  "surfaces": {
+   "LongWallA": {
+    "src": "filmer/elis-junior-b-v01/LongWallA.mp4",
+    "type": "video"
+   },
+   "ShortWallD": {
+    "src": "filmer/elis-junior-b-v01/ShortWallD.mp4",
+    "type": "video"
+   },
+   "LongWallB": {
+    "src": "filmer/elis-junior-b-v01/LongWallB.mp4",
+    "type": "video"
+   },
+   "ShortWallC": {
+    "src": "filmer/elis-junior-b-v01/ShortWallC.mp4",
+    "type": "video"
+   },
+   "Floor": {
+    "src": "filmer/elis-junior-b-v01/Floor.mp4",
+    "type": "video"
+   }
+  }
+ },
+ {
+  "id": "sunsettest-v02",
+  "name": "Sunset-test v02",
+  "group": "Tester",
+  "kind": "film",
+  "note": "10 s",
+  "floorFlip": true,
+  "surfaces": {
+   "LongWallA": {
+    "src": "filmer/sunsettest-v02/LongWallA.mp4",
+    "type": "video"
+   },
+   "ShortWallD": {
+    "src": "filmer/sunsettest-v02/ShortWallD.mp4",
+    "type": "video"
+   },
+   "LongWallB": {
+    "src": "filmer/sunsettest-v02/LongWallB.mp4",
+    "type": "video"
+   },
+   "ShortWallC": {
+    "src": "filmer/sunsettest-v02/ShortWallC.mp4",
+    "type": "video"
+   },
+   "Floor": {
+    "src": "filmer/sunsettest-v02/Floor.mp4",
+    "type": "video"
+   }
+  }
+ },
+ {
+  "id": "blobtest-v01",
+  "name": "Blob-test v01",
+  "group": "Tester",
+  "kind": "film",
+  "note": "3 min med ljud",
+  "floorFlip": true,
+  "audio": "filmer/blobtest-v01/ljud.m4a",
+  "surfaces": {
+   "LongWallA": {
+    "src": "filmer/blobtest-v01/LongWallA.mp4",
+    "type": "video"
+   },
+   "ShortWallD": {
+    "src": "filmer/blobtest-v01/ShortWallD.mp4",
+    "type": "video"
+   },
+   "LongWallB": {
+    "src": "filmer/blobtest-v01/LongWallB.mp4",
+    "type": "video"
+   },
+   "ShortWallC": {
+    "src": "filmer/blobtest-v01/ShortWallC.mp4",
+    "type": "video"
+   },
+   "Floor": {
+    "src": "filmer/blobtest-v01/Floor.mp4",
+    "type": "video"
    }
   }
  }

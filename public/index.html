@@ -28,6 +28,14 @@ h1{margin:0;font-size:22px;line-height:1.1;font-weight:700;letter-spacing:-.01em
 #list button.pick{flex:1;text-align:left;background:none;border:0;color:var(--ink);font:inherit;padding:11px 4px;min-height:44px;cursor:pointer}
 #list button.pick small{display:block;color:var(--mute);font-size:12px}
 #list li.on button.pick{color:var(--acc)}
+#list li.grp{border-bottom:0}
+#list li.grp button{flex:1;display:flex;justify-content:space-between;align-items:center;background:none;border:0;color:var(--mute);font:600 12px Archivo,sans-serif;letter-spacing:.02em;padding:14px 4px 6px;min-height:36px;cursor:pointer;text-align:left}
+#list li.grp button::after{content:'▾';transition:transform .15s}
+#list li.grp.shut button::after{transform:rotate(-90deg)}
+#list li.item{padding-left:10px}
+.tag{font-size:11px;color:var(--acc);border:1px solid rgba(255,199,122,.4);border-radius:6px;padding:1px 6px;margin-left:6px;vertical-align:1px}
+#snd{position:fixed;right:16px;top:16px;padding:0;overflow:hidden}
+#snd button{background:none;border:0;color:var(--ink);font:500 13px Archivo,sans-serif;padding:10px 14px;min-height:42px;cursor:pointer}
 #list li.on button.pick::before{content:"";display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--acc);margin-right:8px;vertical-align:2px}
 .del{background:none;border:1px solid var(--line);color:var(--mute);border-radius:8px;font:inherit;font-size:12px;padding:6px 9px;cursor:pointer}
 .del.sure{border-color:#ff8a7a;color:#ff8a7a}
@@ -83,6 +91,7 @@ input[type=text]{width:100%;font:16px Archivo,sans-serif;color:var(--ink);backgr
   <button data-v="over"><kbd>5</kbd>Översikt</button>
 </nav>
 
+<div id="snd" class="glass" hidden><button id="sndBtn">♪ Slå på ljud</button></div>
 <div id="hint" class="glass">Dra för att titta · W A S D för att gå · Q/E vrid · scroll = synfält</div>
 <div id="load" class="glass" hidden><div id="loadTxt">Laddar miljö…</div><div class="bar"><i id="loadBar"></i></div></div>
 
@@ -238,6 +247,8 @@ async function show(env) {
   try { if (location.hash.slice(1) !== env.id) history.replaceState(null, '', '#' + env.id); } catch (e) {}
   $('#load').hidden = false; $('#loadTxt').textContent = 'Laddar ' + env.name + '…'; $('#loadBar').style.width = '0';
   videos.forEach(v => { v.pause(); v.removeAttribute('src'); v.load(); }); videos = [];
+  if (audio) { audio.pause(); audio = null; }
+  $('#snd').hidden = true;
   let done = 0;
   const mats = await Promise.all(SURF.map(async n => {
     const s = env.surfaces && env.surfaces[n];
@@ -263,6 +274,7 @@ async function show(env) {
   }));
   if (tok !== loadToken) return;
   SURF.forEach((n, i) => { const old = meshes[n].material; meshes[n].material = mats[i] || blank; if (old !== blank && old.map) { old.map.dispose(); old.dispose(); } });
+  if (env.audio) { audio = new Audio(env.audio); audio.loop = true; audio.preload = 'auto'; $('#snd').hidden = false; $('#sndBtn').textContent = '♪ Slå på ljud'; }
   if (videos.length) { const t0 = videos[0]; videos.forEach(v => { v.currentTime = 0; v.play().catch(() => {}); }); syncVideos(t0); }
   $('#load').hidden = true;
   const missing = SURF.filter((n, i) => !mats[i]);
@@ -270,27 +282,55 @@ async function show(env) {
 }
 function syncVideos(master) {
   clearInterval(syncVideos.t);
-  syncVideos.t = setInterval(() => { for (const v of videos) if (v !== master && Math.abs(v.currentTime - master.currentTime) > .12) v.currentTime = master.currentTime; }, 1000);
+  syncVideos.t = setInterval(() => {
+    for (const v of videos) if (v !== master && Math.abs(v.currentTime - master.currentTime) > .12) v.currentTime = master.currentTime;
+    if (audio && !audio.paused && Math.abs(audio.currentTime - master.currentTime) > .2) audio.currentTime = master.currentTime;
+  }, 1000);
 }
+let audio = null;
+$('#sndBtn').addEventListener('click', () => {
+  if (!audio) return;
+  if (audio.paused) {
+    if (videos[0]) { videos.forEach(v => v.currentTime = 0); audio.currentTime = 0; }
+    audio.play().then(() => $('#sndBtn').textContent = '♪ Stäng av ljud').catch(() => {});
+  } else { audio.pause(); $('#sndBtn').textContent = '♪ Slå på ljud'; }
+});
 stage.addEventListener('click', () => videos.forEach(v => v.paused && v.play().catch(() => {})));
 
 // ---------- listan ----------
 let builtIn = [], uploaded = [], canEdit = false, pendingDel = null;
 function all() { return [...uploaded, ...builtIn]; }
+const shut = new Set();
+function groupsOf() {
+  const g = new Map();
+  if (uploaded.length) g.set('Uppladdade', uploaded);
+  for (const e of builtIn) { const k = e.group || 'Övrigt'; if (!g.has(k)) g.set(k, []); g.get(k).push(e); }
+  return g;
+}
 function renderList() {
   const ul = $('#list'); ul.textContent = '';
-  for (const e of all()) {
-    const li = document.createElement('li'); if (e.id === current) li.classList.add('on');
-    const b = document.createElement('button'); b.className = 'pick';
-    b.append(document.createTextNode(e.name));
-    const sm = document.createElement('small'); sm.textContent = e.uploaded ? 'Uppladdad' + (e.created ? ' ' + new Date(e.created).toLocaleDateString('sv-SE') : '') : 'Från Elverket Rum-paketet';
-    b.append(sm); b.addEventListener('click', () => show(e)); li.append(b);
-    if (e.uploaded && canEdit) {
-      const d = document.createElement('button'); d.className = 'del' + (pendingDel === e.id ? ' sure' : '');
-      d.textContent = pendingDel === e.id ? 'Bekräfta' : 'Ta bort';
-      d.addEventListener('click', () => removeEnv(e)); li.append(d);
+  for (const [name, items] of groupsOf()) {
+    const gl = document.createElement('li'); gl.className = 'grp' + (shut.has(name) ? ' shut' : '');
+    const gb = document.createElement('button'); gb.textContent = name + ' (' + items.length + ')';
+    gb.setAttribute('aria-expanded', String(!shut.has(name)));
+    gb.addEventListener('click', () => { shut.has(name) ? shut.delete(name) : shut.add(name); renderList(); });
+    gl.append(gb); ul.append(gl);
+    if (shut.has(name)) continue;
+    for (const e of items) {
+      const li = document.createElement('li'); li.className = 'item' + (e.id === current ? ' on' : '');
+      const b = document.createElement('button'); b.className = 'pick';
+      b.append(document.createTextNode(e.name));
+      if (e.kind === 'film') { const t = document.createElement('span'); t.className = 'tag'; t.textContent = 'film'; b.append(t); }
+      const sm = document.createElement('small');
+      sm.textContent = e.uploaded ? 'Uppladdad' + (e.created ? ' ' + new Date(e.created).toLocaleDateString('sv-SE') : '') : (e.note || '');
+      b.append(sm); b.addEventListener('click', () => show(e)); li.append(b);
+      if (e.uploaded && canEdit) {
+        const d = document.createElement('button'); d.className = 'del' + (pendingDel === e.id ? ' sure' : '');
+        d.textContent = pendingDel === e.id ? 'Bekräfta' : 'Ta bort';
+        d.addEventListener('click', () => removeEnv(e)); li.append(d);
+      }
+      ul.append(li);
     }
-    ul.append(li);
   }
 }
 async function removeEnv(e) {
