@@ -61,7 +61,6 @@
   "group": "Skånegatan",
   "kind": "film",
   "note": "20 s sömlös loop med ljud",
-  "floorFlip": true,
   "audio": "filmer/skanegatan-loop-v01/ljud.m4a",
   "surfaces": {
    "LongWallA": {
@@ -241,7 +240,6 @@
   "group": "Tester",
   "kind": "film",
   "note": "10 s",
-  "floorFlip": true,
   "surfaces": {
    "LongWallA": {
     "src": "filmer/sunsettest-v02/LongWallA.mp4",
@@ -271,7 +269,6 @@
   "group": "Tester",
   "kind": "film",
   "note": "3 min med ljud",
-  "floorFlip": true,
   "audio": "filmer/blobtest-v01/ljud.m4a",
   "surfaces": {
    "LongWallA": {
