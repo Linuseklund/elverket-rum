@@ -1,6 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "headers": [
-    { "source": "/miljoer/(.*)", "headers": [{ "key": "Cache-Control", "value": "private, max-age=86400" }] }
+    { "source": "/miljoer/(.*)\\.jpg", "headers": [{ "key": "Cache-Control", "value": "private, max-age=86400" }] },
+    { "source": "/miljoer/manifest.json", "headers": [{ "key": "Cache-Control", "value": "private, no-cache" }] }
   ]
 }

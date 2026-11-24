@@ -356,7 +356,7 @@ async function removeEnv(e) {
 }
 function flash(t) { $('#load').hidden = false; $('#loadTxt').textContent = t; $('#loadBar').style.width = '100%'; setTimeout(() => $('#load').hidden = true, 4000); }
 
-fetch('miljoer/manifest.json').then(r => r.json()).then(m => {
+fetch('miljoer/manifest.json', {cache: 'no-cache'}).then(r => r.json()).then(m => {
   builtIn = m; renderList();
   const want = location.hash.slice(1);
   if (!current) show(all().find(e => e.id === want) || builtIn[0]);
