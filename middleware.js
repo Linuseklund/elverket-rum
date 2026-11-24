@@ -12,6 +12,6 @@ export default async function middleware(request) {
     if (url.pathname === '/api/upload') return next();
     return new Response(JSON.stringify({ error: 'inte inloggad' }), { status: 401, headers: { 'content-type': 'application/json' } });
   }
-  const next = encodeURIComponent(url.pathname + url.search + url.hash);
-  return Response.redirect(new URL('/login.html?next=' + next, url), 302);
+  const back = encodeURIComponent(url.pathname + url.search + url.hash);
+  return Response.redirect(new URL('/login.html?next=' + back, url), 302);
 }
