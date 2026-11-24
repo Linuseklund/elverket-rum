@@ -266,7 +266,7 @@ async function show(env) {
         tex = new THREE.Texture(fitCanvas(im, Math.min(maxTex, 8192)));
       }
     } catch (e) { done++; return null; }
-    tex.encoding = THREE.sRGBEncoding; tex.anisotropy = aniso; tex.minFilter = THREE.LinearMipmapLinearFilter;
+    tex.encoding = THREE.sRGBEncoding; tex.anisotropy = aniso; tex.minFilter = s.type === 'video' ? THREE.LinearFilter : THREE.LinearMipmapLinearFilter;
     if (n === 'Floor' && env.floorFlip) tex.flipY = false;
     tex.needsUpdate = true;
     done++; if (tok === loadToken) $('#loadBar').style.width = (done / 5 * 100) + '%';
