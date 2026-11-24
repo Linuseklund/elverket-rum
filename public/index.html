@@ -69,6 +69,9 @@ input[type=text]{width:100%;font:16px Archivo,sans-serif;color:var(--ink);backgr
 [hidden]{display:none!important}
 @media(max-width:600px){#top{max-height:42vh}#hint{display:none}#views{bottom:10px}#views button{padding:9px 9px}}
 @media(prefers-reduced-motion:reduce){#load .bar i{transition:none}}
+#top,#views,#snd,#hint{transition:opacity .6s ease}
+body.idle #top,body.idle #views,body.idle #snd,body.idle #hint{opacity:0;pointer-events:none}
+body.idle{cursor:none}
 </style>
 </head>
 <body>
@@ -445,6 +448,23 @@ $('#save').addEventListener('click', async () => {
   } finally { $('#cancel').disabled = false; renderSlots(); }
 });
 }
+
+// ---------- dölj rutorna när man tittar ----------
+(() => {
+  let t; const ui = ['#top', '#views', '#snd', '#hint'];
+  const overUI = e => e && e.target && e.target.closest && e.target.closest(ui.join(','));
+  const wake = e => {
+    document.body.classList.remove('idle'); clearTimeout(t);
+    if (overUI(e) || !$('#panel').hidden) return;  // låt rutan vara kvar medan man använder den
+    t = setTimeout(() => document.body.classList.add('idle'), 2500);
+  };
+  // Att dra/gå/zooma i rummet håller rutorna borta; muspekare som rör sig utan knapp eller ett tryck utan att dra tar fram dem.
+  let down = null;
+  addEventListener('pointermove', e => { if (!e.buttons && e.pointerType === 'mouse') wake(e); else if (overUI(e)) wake(e); }, {passive: true});
+  addEventListener('pointerdown', e => { down = [e.clientX, e.clientY]; if (overUI(e)) wake(e); else if (!document.body.classList.contains('idle')) { clearTimeout(t); t = setTimeout(() => document.body.classList.add('idle'), 2500); } }, {passive: true});
+  addEventListener('pointerup', e => { if (down && Math.hypot(e.clientX - down[0], e.clientY - down[1]) < 6 && !overUI(e) && e.pointerType !== 'mouse') { if (document.body.classList.contains('idle')) wake(e); else document.body.classList.add('idle'); } down = null; }, {passive: true});
+  wake();
+})();
 </script>
 </body>
 </html>
