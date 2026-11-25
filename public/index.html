@@ -92,10 +92,12 @@ body.idle{cursor:none}
   <button data-v="A"><kbd>4</kbd>Långvägg A</button>
   <button data-v="B">Långvägg B</button>
   <button data-v="over"><kbd>5</kbd>Översikt</button>
+  <button id="zOut" title="Zooma ut (−)">−</button><button id="zIn" title="Zooma in (+)">+</button>
+  <button id="hdBtn" hidden title="Ladda filmen i full upplösning (tyngre)">HD</button>
 </nav>
 
 <div id="snd" class="glass" hidden><button id="sndBtn">♪ Slå på ljud</button></div>
-<div id="hint" class="glass">Dra för att titta · W A S D för att gå · Q/E vrid · scroll = synfält</div>
+<div id="hint" class="glass">Dra för att titta · W A S D för att gå · Q/E vrid · scroll, + / − eller nyp = zooma · 0 = normal</div>
 <div id="load" class="glass" hidden><div id="loadTxt">Laddar miljö…</div><div class="bar"><i id="loadBar"></i></div></div>
 
 <aside id="panel" class="glass" hidden>
@@ -142,8 +144,8 @@ const CORNERS = {
 };
 const blank = new THREE.MeshBasicMaterial({color: 0x17171a});
 const meshes = {};
-for (const n of SURF) {
-  const c = CORNERS[n], g = new THREE.BufferGeometry();
+function quadGeom(c) {
+  const g = new THREE.BufferGeometry();
   g.setAttribute('position', new THREE.Float32BufferAttribute([...c[0], ...c[1], ...c[2], ...c[3]], 3));
   g.setAttribute('uv', new THREE.Float32BufferAttribute([0,0, 1,0, 0,1, 1,1], 2));
   g.setIndex([0,1,2, 2,1,3]); g.computeVertexNormals();
@@ -153,7 +155,23 @@ for (const n of SURF) {
   nrm.fromBufferAttribute(g.getAttribute('normal'), 0);
   const inward = new THREE.Vector3(0, EYE, 0).sub(ctr);
   if (nrm.dot(inward) < 0) g.setIndex([0,2,1, 2,3,1]);
-  const m = new THREE.Mesh(g, blank); scene.add(m); meshes[n] = m;
+  return g;
+}
+for (const n of SURF) { const m = new THREE.Mesh(quadGeom(CORNERS[n]), blank); scene.add(m); meshes[n] = m; }
+// HD-filmer delas i vertikala remsor (varje fil ≤ 4096 px bred så att datorns videoavkodare klarar dem)
+const tileMeshes = {};
+const lerp3 = (a, b, t) => a.map((x, i) => x + (b[i] - x) * t);
+function setTiles(n, mats) {
+  (tileMeshes[n] || []).forEach(m => { scene.remove(m); m.geometry.dispose(); if (m.material.map) m.material.map.dispose(); m.material.dispose(); });
+  tileMeshes[n] = [];
+  if (!mats) { meshes[n].visible = true; return; }
+  const c = CORNERS[n], k = mats.length;
+  mats.forEach((mat, i) => {
+    const t0 = i / k, t1 = (i + 1) / k;
+    const m = new THREE.Mesh(quadGeom([lerp3(c[0], c[1], t0), lerp3(c[0], c[1], t1), lerp3(c[2], c[3], t0), lerp3(c[2], c[3], t1)]), mat);
+    scene.add(m); tileMeshes[n].push(m);
+  });
+  meshes[n].visible = false;
 }
 const edges = new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(2 * W, H, 2 * L)),
   new THREE.LineBasicMaterial({color: 0x555555, transparent: true, opacity: .5}));
@@ -182,13 +200,13 @@ const VIEWS = {
   B: () => ({pos: [0, EYE, 0], yaw: -Math.PI / 2}),
 };
 function setView(v) {
-  for (const b of document.querySelectorAll('#views button')) b.classList.toggle('on', b.dataset.v === v);
+  for (const b of document.querySelectorAll('#views button[data-v]')) b.classList.toggle('on', b.dataset.v === v);
   if (v === 'over') { st.over = true; meshesFront(true); }
   else { st.over = false; meshesFront(false); const o = VIEWS[v](); st.pos.set(...o.pos); st.yaw = o.yaw; st.pitch = 0; }
   applyCam();
 }
-function meshesFront(over) { for (const n of SURF) { const m = meshes[n].material; if (m !== blank) m.side = over ? THREE.FrontSide : THREE.DoubleSide; } edges.visible = over; }
-document.querySelectorAll('#views button').forEach(b => b.addEventListener('click', () => setView(b.dataset.v)));
+function meshesFront(over) { for (const n of SURF) for (const mesh of [meshes[n], ...(tileMeshes[n] || [])]) { const m = mesh.material; if (m !== blank) m.side = over ? THREE.FrontSide : THREE.DoubleSide; } edges.visible = over; }
+document.querySelectorAll('#views button[data-v]').forEach(b => b.addEventListener('click', () => setView(b.dataset.v)));
 
 let drag = null;
 stage.addEventListener('pointerdown', e => { drag = {x: e.clientX, y: e.clientY}; stage.setPointerCapture(e.pointerId); });
@@ -204,13 +222,30 @@ stage.addEventListener('pointerup', () => drag = null);
 stage.addEventListener('wheel', e => {
   e.preventDefault();
   if (st.over) st.odist = Math.max(20, Math.min(90, st.odist + e.deltaY * .03));
-  else st.fov = Math.max(30, Math.min(110, st.fov + e.deltaY * .04));
+  else zoomBy(Math.exp(e.deltaY * .0015), false);
   applyCam();
 }, {passive: false});
+// zoom: synfältet går ner till 6° så att man kan gå nära detaljer
+function zoomBy(f, apply = true) {
+  if (st.over) st.odist = Math.max(20, Math.min(90, st.odist * f)); else st.fov = Math.max(6, Math.min(110, st.fov * f));
+  if (apply) applyCam();
+}
+$('#zIn').addEventListener('click', () => zoomBy(1 / 1.4));
+$('#zOut').addEventListener('click', () => zoomBy(1.4));
+// nyp för att zooma på mobil/surfplatta
+const touches = new Map(); let pinch = 0;
+stage.addEventListener('pointerdown', e => { if (e.pointerType === 'touch') touches.set(e.pointerId, [e.clientX, e.clientY]); });
+stage.addEventListener('pointermove', e => {
+  if (!touches.has(e.pointerId)) return; touches.set(e.pointerId, [e.clientX, e.clientY]);
+  if (touches.size === 2) { const [a, b] = [...touches.values()], d = Math.hypot(a[0] - b[0], a[1] - b[1]); if (pinch) zoomBy(pinch / d); pinch = d; drag = null; }
+});
+const endTouch = e => { touches.delete(e.pointerId); if (touches.size < 2) pinch = 0; };
+stage.addEventListener('pointerup', endTouch); stage.addEventListener('pointercancel', endTouch);
 const keys = new Set();
 addEventListener('keydown', e => {
   if (e.target.tagName === 'INPUT') return;
   const k = e.key.toLowerCase();
+  if (k === '+' || k === '=') zoomBy(1 / 1.25); if (k === '-') zoomBy(1.25); if (k === '0') { st.fov = 70; applyCam(); }
   if ({'1': 'mitt', '2': 'horn', '3': 'D', '4': 'A', '5': 'over'}[k]) setView({'1': 'mitt', '2': 'horn', '3': 'D', '4': 'A', '5': 'over'}[k]);
   keys.add(k);
 });
@@ -245,6 +280,8 @@ function fitCanvas(im, maxW) {
   c.getContext('2d').drawImage(im, 0, 0, c.width, c.height); return c;
 }
 let videos = [], loadToken = 0, current = null;
+let hdOn = false; try { hdOn = localStorage.getItem('er_hd') === '1'; } catch (e) {}
+
 async function show(env) {
   const tok = ++loadToken; current = env.id; renderList();
   try { if (location.hash.slice(1) !== env.id) history.replaceState(null, '', '#' + env.id); } catch (e) {}
@@ -253,9 +290,10 @@ async function show(env) {
   if (audio) { audio.pause(); audio = null; }
   $('#snd').hidden = true;
   let done = 0;
-  const mats = await Promise.all(SURF.map(async n => {
-    const s = env.surfaces && env.surfaces[n];
-    if (!s || !s.src) { done++; return null; }
+  const useHD = hdOn && env.hd;
+  $('#hdBtn').hidden = !env.hd; $('#hdBtn').classList.toggle('on', !!useHD);
+  const surfs = Object.assign({}, env.surfaces, useHD ? env.hd : {});
+  const loadTex = async (n, s) => {
     let tex;
     try {
       if (s.type === 'video') {
@@ -268,15 +306,27 @@ async function show(env) {
         const im = await loadImage(s.src);
         tex = new THREE.Texture(fitCanvas(im, Math.min(maxTex, 8192)));
       }
-    } catch (e) { done++; return null; }
+    } catch (e) { return null; }
     tex.encoding = THREE.sRGBEncoding; tex.anisotropy = aniso; tex.minFilter = s.type === 'video' ? THREE.LinearFilter : THREE.LinearMipmapLinearFilter;
     if (n === 'Floor' && env.floorFlip) tex.flipY = false;
     tex.needsUpdate = true;
-    done++; if (tok === loadToken) $('#loadBar').style.width = (done / 5 * 100) + '%';
     return new THREE.MeshBasicMaterial({map: tex, side: st.over ? THREE.FrontSide : THREE.DoubleSide});
+  };
+  const mats = await Promise.all(SURF.map(async n => {
+    const s = surfs[n];
+    let r = null;
+    if (s && s.tiles) { const ms = await Promise.all(s.tiles.map(src => loadTex(n, {type: s.type, src}))); r = ms.every(Boolean) ? ms : null; }
+    else if (s && s.src) r = await loadTex(n, s);
+    done++; if (tok === loadToken) $('#loadBar').style.width = (done / 5 * 100) + '%';
+    return r;
   }));
   if (tok !== loadToken) return;
-  SURF.forEach((n, i) => { const old = meshes[n].material; meshes[n].material = mats[i] || blank; if (old !== blank && old.map) { old.map.dispose(); old.dispose(); } });
+  SURF.forEach((n, i) => {
+    const old = meshes[n].material, tiled = Array.isArray(mats[i]);
+    meshes[n].material = (!tiled && mats[i]) || blank;
+    if (old !== blank && old.map) { old.map.dispose(); old.dispose(); }
+    setTiles(n, tiled ? mats[i] : null);
+  });
   if (env.audio) { audio = new Audio(env.audio); audio.loop = true; audio.preload = 'auto'; $('#snd').hidden = false; $('#sndBtn').textContent = '♪ Slå på ljud'; }
   if (videos.length) { const t0 = videos[0]; videos.forEach(v => { v.currentTime = 0; v.play().catch(() => {}); }); syncVideos(t0); }
   $('#load').hidden = true;
@@ -299,6 +349,10 @@ function syncVideos(master) {
   }, 1000);
 }
 let audio = null;
+$('#hdBtn').addEventListener('click', () => {
+  hdOn = !hdOn; try { localStorage.setItem('er_hd', hdOn ? '1' : '0'); } catch (e) {}
+  const e = all().find(x => x.id === current); if (e) show(e);
+});
 $('#sndBtn').addEventListener('click', () => {
   if (!audio) return;
   if (audio.paused) {
@@ -455,7 +509,7 @@ $('#save').addEventListener('click', async () => {
   const overUI = e => e && e.target && e.target.closest && e.target.closest(ui.join(','));
   const wake = e => {
     document.body.classList.remove('idle'); clearTimeout(t);
-    if (overUI(e) || !$('#panel').hidden) return;  // låt rutan vara kvar medan man använder den
+    if (overUI(e) || !document.querySelector('#panel').hidden) return;  // låt rutan vara kvar medan man använder den
     t = setTimeout(() => document.body.classList.add('idle'), 2500);
   };
   // Att dra/gå/zooma i rummet håller rutorna borta; muspekare som rör sig utan knapp eller ett tryck utan att dra tar fram dem.

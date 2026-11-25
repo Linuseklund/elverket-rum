@@ -237,7 +237,7 @@
   "name": "Sunset-test v02",
   "group": "Tester",
   "kind": "film",
-  "note": "10 s",
+  "note": "10 s · HD finns",
   "surfaces": {
    "LongWallA": {
     "src": "filmer/sunsettest-v02/LongWallA.mp4",
@@ -260,7 +260,38 @@
     "type": "video"
    }
   },
-  "floorFlip": true
+  "floorFlip": true,
+  "hd": {
+   "LongWallA": {
+    "type": "video",
+    "tiles": [
+     "filmer/sunsettest-v02/hd/LongWallA_1.mp4",
+     "filmer/sunsettest-v02/hd/LongWallA_2.mp4"
+    ]
+   },
+   "LongWallB": {
+    "type": "video",
+    "tiles": [
+     "filmer/sunsettest-v02/hd/LongWallB_1.mp4",
+     "filmer/sunsettest-v02/hd/LongWallB_2.mp4"
+    ]
+   },
+   "ShortWallC": {
+    "type": "video",
+    "src": "filmer/sunsettest-v02/hd/ShortWallC.mp4"
+   },
+   "ShortWallD": {
+    "type": "video",
+    "src": "filmer/sunsettest-v02/hd/ShortWallD.mp4"
+   },
+   "Floor": {
+    "type": "video",
+    "tiles": [
+     "filmer/sunsettest-v02/hd/Floor_1.mp4",
+     "filmer/sunsettest-v02/hd/Floor_2.mp4"
+    ]
+   }
+  }
  },
  {
   "id": "blobtest-v01",
