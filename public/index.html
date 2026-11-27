@@ -446,7 +446,7 @@ function updateLive(dt) {
     const half = lg.flip ? w / 2 : w / 2, rad = lg.flip ? hgt / 2 : w / 2 * Math.abs(Math.sin(rot)) + hgt / 2 * Math.abs(Math.cos(rot));
     const y = Math.max(rad + .05, Math.min(H - rad - .05, lg.y0 + lg.ay * Math.sin(lg.fy * t * 6.28 + lg.py)));
     const s = (((lg.s0 + lg.v * t) % PERIM) + PERIM) % PERIM;
-    _c.setHSL((((lg.hue + lg.hs * t) % 1) + 1) % 1, lg.sat, (.5 + .22 * pulse) * Math.min(1, .45 + .55 * dz));
+    _c.setHSL((((lg.hue + lg.hs * t) % 1) + 1) % 1, lg.sat, (.5 + .22 * pulse) * Math.min(1.15, .7 + .35 * dz));
     let wi = WALL.findIndex(W => s >= W.start && s < W.start + W.len); if (wi < 0) wi = 0;
     const u = s - WALL[wi].start, depth = .004 + lg.i * .0006;
     placeSlot(lg.slots[0], wi, u, y, lg, w * sx, hgt, ang, pulse, depth);
