@@ -392,15 +392,16 @@ async function setupLive(env, tok) {
   const R = rng(L.seed || 1), N = L.count || 30;
   const order = Array.from({length: live.bands.n}, (_, i) => i).sort(() => R() - .5);   // varje logga får sitt eget frekvensband
   for (let i = 0; i < N; i++) {
-    const w = 0.9 + Math.pow(R(), 1.6) * 4.6;                 // 0,9–5,5 m bred
+    const w = 1.2 + Math.pow(R(), 1.4) * 4.8;                 // grundstorlek; djupet skalar den 0,35–1,4 ×
     const flip = R() < .7;                                       // 70 %: vrider sig runt sin lodräta axel, övriga snurrar i väggens plan
     const lg = {
       i, w, flip, band: order[i % order.length],
-      s0: R() * PERIM, v: (R() < .5 ? -1 : 1) * (.25 + R() * .9),
-      y0: 1.2 + R() * (H - 2.4), ay: .3 + R() * 1.4, fy: .05 + R() * .25, py: R() * 6.28,
-      rs: (R() < .5 ? -1 : 1) * (.25 + R() * 1.6), pr: R() * 6.28,
-      hue: R(), hs: (R() - .5) * .02, sat: .65 + R() * .35,
-      att: .015 + R() * .05, rel: .1 + R() * .45, thr: .08 + R() * .3, gam: .8 + R() * 1.6, amp: .25 + R() * .8,
+      s0: R() * PERIM, v: (R() < .5 ? -1 : 1) * (.06 + R() * .26),
+      y0: 1.2 + R() * (H - 2.4), ay: .15 + R() * .5, fy: .012 + R() * .05, py: R() * 6.28,
+      dz0: .55 + R() * .5, dza: .2 + R() * .35, dzf: .015 + R() * .045, dzp: R() * 6.28,   // djup: loggan glider närmare/längre bort
+      rs: (R() < .5 ? -1 : 1) * (.08 + R() * .5), pr: R() * 6.28,
+      hue: R(), hs: (R() - .5) * .008, sat: .65 + R() * .35,
+      att: .06 + R() * .1, rel: .3 + R() * .6, thr: .08 + R() * .3, gam: .9 + R() * 1.4, amp: .1 + R() * .3,
       e: 0, slots: []
     };
     for (let k = 0; k < 2; k++) {
@@ -438,13 +439,14 @@ function updateLive(dt) {
     const raw = (B.raw[f0 * B.n + lg.band] * (1 - fr) + B.raw[(f0 + 1) * B.n + lg.band] * fr) / 255;
     const tc = raw > lg.e ? lg.att : lg.rel; lg.e += (raw - lg.e) * (1 - Math.exp(-dt / tc));
     const pulse = Math.pow(Math.max(0, (lg.e - lg.thr) / (1 - lg.thr)), lg.gam);
-    const sc = 1 + lg.amp * pulse, w = lg.w * sc, hgt = w * live.AR;
+    const dz = Math.max(.3, lg.dz0 + lg.dza * Math.sin(lg.dzf * t * 6.28 + lg.dzp));   // närmare = större och ljusare
+    const sc = dz * (1 + lg.amp * pulse), w = lg.w * sc, hgt = w * live.AR;
     const rot = lg.rs * t + lg.pr;
     const sx = lg.flip ? Math.cos(rot) : 1, ang = lg.flip ? 0 : rot;
     const half = lg.flip ? w / 2 : w / 2, rad = lg.flip ? hgt / 2 : w / 2 * Math.abs(Math.sin(rot)) + hgt / 2 * Math.abs(Math.cos(rot));
     const y = Math.max(rad + .05, Math.min(H - rad - .05, lg.y0 + lg.ay * Math.sin(lg.fy * t * 6.28 + lg.py)));
     const s = (((lg.s0 + lg.v * t) % PERIM) + PERIM) % PERIM;
-    _c.setHSL((((lg.hue + lg.hs * t) % 1) + 1) % 1, lg.sat, .5 + .22 * pulse);
+    _c.setHSL((((lg.hue + lg.hs * t) % 1) + 1) % 1, lg.sat, (.5 + .22 * pulse) * Math.min(1, .45 + .55 * dz));
     let wi = WALL.findIndex(W => s >= W.start && s < W.start + W.len); if (wi < 0) wi = 0;
     const u = s - WALL[wi].start, depth = .004 + lg.i * .0006;
     placeSlot(lg.slots[0], wi, u, y, lg, w * sx, hgt, ang, pulse, depth);
