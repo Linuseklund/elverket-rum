@@ -127,7 +127,7 @@ const $ = s => document.querySelector(s);
 const stage = $('#stage');
 const renderer = new THREE.WebGLRenderer({antialias: true});
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
-renderer.outputEncoding = THREE.sRGBEncoding;
+renderer.outputEncoding = THREE.sRGBEncoding; renderer.localClippingEnabled = true;
 stage.appendChild(renderer.domElement);
 const scene = new THREE.Scene(); scene.background = new THREE.Color(0x050506);
 const cam = new THREE.PerspectiveCamera(70, 1, 0.05, 500);
@@ -264,6 +264,7 @@ function tick(t) {
     st.pos.x = Math.max(-W + .3, Math.min(W - .3, st.pos.x)); st.pos.z = Math.max(-L + .3, Math.min(L - .3, st.pos.z));
     applyCam();
   }
+  if (live.group) updateLive(dt);
   renderer.render(scene, cam); requestAnimationFrame(tick);
 }
 function resize() { renderer.setSize(innerWidth, innerHeight); cam.aspect = innerWidth / innerHeight; applyCam(); }
@@ -289,6 +290,13 @@ async function show(env) {
   videos.forEach(v => { v.pause(); v.removeAttribute('src'); v.load(); }); videos = [];
   if (audio) { audio.pause(); audio = null; }
   $('#snd').hidden = true;
+  clearLive();
+  if (env.live) {
+    try { await setupLive(env, tok); } catch (err) { console.error(err); }
+    if (tok !== loadToken) return;
+    if (env.audio) { audio = new Audio(env.audio); audio.loop = true; audio.preload = 'auto'; $('#snd').hidden = false; $('#sndBtn').textContent = '♪ Slå på ljud'; }
+    $('#hdBtn').hidden = true; $('#load').hidden = true; return;
+  }
   let done = 0;
   const useHD = hdOn && env.hd;
   $('#hdBtn').hidden = !env.hd; $('#hdBtn').classList.toggle('on', !!useHD);
@@ -333,6 +341,119 @@ async function show(env) {
   const missing = SURF.filter((n, i) => !mats[i]);
   if (missing.length) { $('#load').hidden = false; $('#loadTxt').textContent = 'Saknas: ' + missing.map(n => LABEL[n]).join(', '); $('#loadBar').style.width = '100%'; setTimeout(() => { if (tok === loadToken) $('#load').hidden = true; }, 3500); }
 }
+// ---------- LIVE: miljöer som ritas i realtid (skarpa i alla upplösningar, laddar nästan ingenting) ----------
+const live = {group: null, logos: [], mats: [], tex: [], clock: 0, bands: null};
+const WALLS = ['LongWallA', 'ShortWallD', 'LongWallB', 'ShortWallC'];   // runt rummet: A → D → B → C
+const WALL = WALLS.map(n => {
+  const c = CORNERS[n].map(p => new THREE.Vector3(...p));
+  const right = c[1].clone().sub(c[0]), len = right.length(); right.normalize();
+  const up = new THREE.Vector3(0, 1, 0);
+  let inward = new THREE.Vector3().crossVectors(right, up);
+  if (inward.dot(new THREE.Vector3(0, H / 2, 0).sub(c[0])) < 0) inward.negate();
+  const q = new THREE.Quaternion().setFromRotationMatrix(new THREE.Matrix4().makeBasis(right, up, inward));
+  const clip = [new THREE.Plane(right.clone(), -right.dot(c[0])), new THREE.Plane(right.clone().negate(), right.dot(c[1])),
+                new THREE.Plane(up.clone(), 0), new THREE.Plane(up.clone().negate(), H)];
+  return {n, o: c[0], right, up, inward, len, q, clip};
+});
+let acc = 0; WALL.forEach(w => { w.start = acc; acc += w.len; }); const PERIM = acc;
+const darkWall = new THREE.MeshBasicMaterial({color: 0x000000}), darkFloor = new THREE.MeshBasicMaterial({color: 0x000000});
+function clearLive() {
+  if (!live.group) return;
+  scene.remove(live.group);
+  live.group.traverse(o => o.geometry && o.geometry.dispose());
+  live.mats.forEach(m => m.dispose()); live.tex.forEach(t => t.dispose());
+  Object.assign(live, {group: null, logos: [], mats: [], tex: [], bands: null});
+}
+function rng(seed) { return () => { seed |= 0; seed = seed + 0x6D2B79F5 | 0; let t = Math.imul(seed ^ seed >>> 15, 1 | seed); t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t; return ((t ^ t >>> 14) >>> 0) / 4294967296; }; }
+async function svgCanvas(url, w, pad, blur) {
+  let txt = await fetch(url).then(r => r.text());
+  const vb = (txt.match(/viewBox="([^"]+)"/) || [])[1].split(/[ ,]+/).map(Number);
+  txt = txt.replace('<svg ', `<svg width="${vb[2]}" height="${vb[3]}" `);
+  const im = await loadImage(URL.createObjectURL(new Blob([txt], {type: 'image/svg+xml'})));
+  const ar = vb[3] / vb[2], cw = Math.round(w * (1 + 2 * pad)), ch = Math.round(w * (ar + 2 * pad));
+  const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+  const ctx = cv.getContext('2d'); if (blur) ctx.filter = `blur(${blur}px)`;
+  ctx.drawImage(im, w * pad, w * pad, w, w * ar);
+  if (blur) { ctx.filter = 'none'; ctx.globalCompositeOperation = 'lighter'; ctx.globalAlpha = .5; ctx.drawImage(cv, 0, 0); }
+  return {cv, ar};
+}
+async function setupLive(env, tok) {
+  const L = env.live;
+  SURF.forEach(n => { const old = meshes[n].material; if (old !== blank && old.map) { old.map.dispose(); old.dispose(); } setTiles(n, null); meshes[n].material = n === 'Floor' ? darkFloor : darkWall; });
+  const [sharp, glow, bands] = await Promise.all([
+    svgCanvas(L.logo, Math.min(maxTex, 4096), 0, 0), svgCanvas(L.logo, 1024, .35, 22), fetch(L.bands).then(r => r.json())]);
+  if (tok !== loadToken) return;
+  const raw = Uint8Array.from(atob(bands.data), c => c.charCodeAt(0));
+  live.bands = {fps: bands.fps, n: bands.bands, frames: bands.frames, raw, dur: bands.frames / bands.fps};
+  const mk = cv => { const t = new THREE.CanvasTexture(cv); t.encoding = THREE.sRGBEncoding; t.anisotropy = aniso; t.minFilter = THREE.LinearMipmapLinearFilter; live.tex.push(t); return t; };
+  const tS = mk(sharp.cv), tG = mk(glow.cv), AR = sharp.ar, GLOW = 1 + 2 * .35;
+  const geo = new THREE.PlaneGeometry(1, 1);
+  const g = new THREE.Group(); live.group = g; scene.add(g);
+  const R = rng(L.seed || 1), N = L.count || 30;
+  const order = Array.from({length: live.bands.n}, (_, i) => i).sort(() => R() - .5);   // varje logga får sitt eget frekvensband
+  for (let i = 0; i < N; i++) {
+    const w = 0.9 + Math.pow(R(), 1.6) * 4.6;                 // 0,9–5,5 m bred
+    const flip = R() < .7;                                       // 70 %: vrider sig runt sin lodräta axel, övriga snurrar i väggens plan
+    const lg = {
+      i, w, flip, band: order[i % order.length],
+      s0: R() * PERIM, v: (R() < .5 ? -1 : 1) * (.25 + R() * .9),
+      y0: 1.2 + R() * (H - 2.4), ay: .3 + R() * 1.4, fy: .05 + R() * .25, py: R() * 6.28,
+      rs: (R() < .5 ? -1 : 1) * (.25 + R() * 1.6), pr: R() * 6.28,
+      hue: R(), hs: (R() - .5) * .02, sat: .65 + R() * .35,
+      att: .015 + R() * .05, rel: .1 + R() * .45, thr: .08 + R() * .3, gam: .8 + R() * 1.6, amp: .25 + R() * .8,
+      e: 0, slots: []
+    };
+    for (let k = 0; k < 2; k++) {
+      const ms = new THREE.MeshBasicMaterial({map: tS, transparent: true, depthWrite: false, side: THREE.DoubleSide, clippingPlanes: WALL[0].clip});
+      const mg = new THREE.MeshBasicMaterial({map: tG, transparent: true, depthWrite: false, side: THREE.DoubleSide, blending: THREE.AdditiveBlending, clippingPlanes: WALL[0].clip});
+      live.mats.push(ms, mg);
+      const a = new THREE.Mesh(geo, ms), b = new THREE.Mesh(geo, mg);
+      a.renderOrder = 10 + i * 2 + 1; b.renderOrder = 10 + i * 2; g.add(a, b);
+      lg.slots.push({a, b});
+    }
+    live.logos.push(lg);
+  }
+  live.AR = AR; live.GLOW = GLOW; live.t0 = performance.now() / 1000;
+}
+const _q = new THREE.Quaternion(), _z = new THREE.Vector3(0, 0, 1), _c = new THREE.Color();
+function placeSlot(sl, wi, u, y, lg, sx, sy, ang, pulse, depth) {
+  const w = WALL[wi];
+  const pos = w.o.clone().addScaledVector(w.right, u).addScaledVector(w.up, y).addScaledVector(w.inward, depth);
+  // i översikten: dölj loggor på väggar man ser utifrån
+  const vis = !st.over || w.inward.dot(cam.position.clone().sub(w.o)) > 0;
+  _q.copy(w.q).multiply(new THREE.Quaternion().setFromAxisAngle(_z, ang));
+  for (const [m, k] of [[sl.a, 1], [sl.b, live.GLOW]]) {
+    m.visible = vis; m.position.copy(pos); m.quaternion.copy(_q); m.scale.set(sx * k, sy * k, 1);
+    m.material.clippingPlanes = w.clip;
+  }
+  sl.a.material.color.copy(_c); sl.a.material.opacity = .92;
+  sl.b.material.color.copy(_c); sl.b.material.opacity = .08 + .9 * pulse;
+}
+function updateLive(dt) {
+  const B = live.bands; if (!B) return;
+  const t = (audio && !audio.paused) ? audio.currentTime : ((performance.now() / 1000 - live.t0) % B.dur);
+  live.clock = t;
+  const f = Math.min(B.frames - 2, Math.max(0, t * B.fps)), f0 = f | 0, fr = f - f0;
+  for (const lg of live.logos) {
+    const raw = (B.raw[f0 * B.n + lg.band] * (1 - fr) + B.raw[(f0 + 1) * B.n + lg.band] * fr) / 255;
+    const tc = raw > lg.e ? lg.att : lg.rel; lg.e += (raw - lg.e) * (1 - Math.exp(-dt / tc));
+    const pulse = Math.pow(Math.max(0, (lg.e - lg.thr) / (1 - lg.thr)), lg.gam);
+    const sc = 1 + lg.amp * pulse, w = lg.w * sc, hgt = w * live.AR;
+    const rot = lg.rs * t + lg.pr;
+    const sx = lg.flip ? Math.cos(rot) : 1, ang = lg.flip ? 0 : rot;
+    const half = lg.flip ? w / 2 : w / 2, rad = lg.flip ? hgt / 2 : w / 2 * Math.abs(Math.sin(rot)) + hgt / 2 * Math.abs(Math.cos(rot));
+    const y = Math.max(rad + .05, Math.min(H - rad - .05, lg.y0 + lg.ay * Math.sin(lg.fy * t * 6.28 + lg.py)));
+    const s = (((lg.s0 + lg.v * t) % PERIM) + PERIM) % PERIM;
+    _c.setHSL((((lg.hue + lg.hs * t) % 1) + 1) % 1, lg.sat, .5 + .22 * pulse);
+    let wi = WALL.findIndex(W => s >= W.start && s < W.start + W.len); if (wi < 0) wi = 0;
+    const u = s - WALL[wi].start, depth = .004 + lg.i * .0006;
+    placeSlot(lg.slots[0], wi, u, y, lg, w * sx, hgt, ang, pulse, depth);
+    const s1 = lg.slots[1];
+    if (u - half < 0) { const p = (wi + 3) % 4; placeSlot(s1, p, u + WALL[p].len, y, lg, w * sx, hgt, ang, pulse, depth); }
+    else if (u + half > WALL[wi].len) { const nx = (wi + 1) % 4; placeSlot(s1, nx, u - WALL[wi].len, y, lg, w * sx, hgt, ang, pulse, depth); }
+    else { s1.a.visible = s1.b.visible = false; }
+  }
+}
 function syncVideos(master) {
   clearInterval(syncVideos.t);
   // Ljudet är huvudklocka när det spelar: det hoppar aldrig, bilden följer ljudet (annars hackar ljudet).
@@ -357,6 +478,7 @@ $('#sndBtn').addEventListener('click', () => {
   if (!audio) return;
   if (audio.paused) {
     if (videos[0]) audio.currentTime = videos[0].currentTime % (audio.duration || 1e9);
+    else if (live.group) audio.currentTime = live.clock % (audio.duration || 1e9);
     audio.play().then(() => $('#sndBtn').textContent = '♪ Stäng av ljud').catch(() => {});
   } else { audio.pause(); $('#sndBtn').textContent = '♪ Slå på ljud'; }
 });
@@ -385,7 +507,7 @@ function renderList() {
       const li = document.createElement('li'); li.className = 'item' + (e.id === current ? ' on' : '');
       const b = document.createElement('button'); b.className = 'pick';
       b.append(document.createTextNode(e.name));
-      if (e.kind === 'film') { const t = document.createElement('span'); t.className = 'tag'; t.textContent = 'film'; b.append(t); }
+      if (e.kind === 'film' || e.kind === 'live') { const t = document.createElement('span'); t.className = 'tag'; t.textContent = e.kind; b.append(t); }
       const sm = document.createElement('small');
       sm.textContent = e.uploaded ? 'Uppladdad' + (e.created ? ' ' + new Date(e.created).toLocaleDateString('sv-SE') : '') : (e.note || '');
       b.append(sm); b.addEventListener('click', () => show(e)); li.append(b);

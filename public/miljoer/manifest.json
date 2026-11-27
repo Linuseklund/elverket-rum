@@ -1,5 +1,21 @@
 [
  {
+  "id": "elverket-loggor-v01",
+  "name": "Elverket – 30 loggor",
+  "group": "Elverket",
+  "kind": "live",
+  "note": "Ritas live i full upplösning · pulserar till musiken",
+  "audio": "filmer/blobtest-v01/ljud.m4a",
+  "live": {
+   "kind": "logos",
+   "logo": "live/elverket-logo.svg",
+   "bands": "live/blob-bands.json",
+   "count": 30,
+   "seed": 11
+  },
+  "surfaces": {}
+ },
+ {
   "id": "gata3d-byggrasa-v02",
   "name": "Gata 3D – uppbyggnad & kollaps v02",
   "group": "Gata 3D",
